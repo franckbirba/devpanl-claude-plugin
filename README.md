@@ -7,7 +7,7 @@ Install this plugin in a project (zeno, edms, …) and the team can dispatch bui
 ## Install
 
 ```bash
-claude plugin install franckbirba/devpanl-plugin
+claude plugin install franckbirba/devpanl-claude-plugin
 ```
 
 Then, in the project root:
