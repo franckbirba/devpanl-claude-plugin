@@ -1,0 +1,9 @@
+---
+description: Make this project devpanl-ready in one silent pass — generates .agents souls, .devpanlrc.json, .mcp.json entries, and the CLAUDE.md integration section.
+---
+
+Make this project ready for the DevPanel autonomous agent team.
+
+Use the `devpanl-analyzer` subagent. Do not ask any questions — silent mode. Detect everything from the codebase, fall back to `__SET_ME__` for unresolvable values and surface them in the final report.
+
+Output the analyzer's "generated / needs attention / doctor checks" report at the end. After that, do nothing else — the user reviews the diff with git and decides what to commit.
