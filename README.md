@@ -6,13 +6,17 @@ Install this plugin in a project (zeno, edms, …) and the team can dispatch bui
 
 ## Install
 
-```bash
-claude plugin install franckbirba/devpanl-claude-plugin
+Inside any Claude Code session:
+
+```
+/plugin marketplace add franckbirba/devpanl-claude-plugin
+/plugin install devpanl@devpanl-claude-plugin
+/reload-plugins
 ```
 
 Then, in the project root:
 
-```bash
+```
 /devpanl:init
 ```
 

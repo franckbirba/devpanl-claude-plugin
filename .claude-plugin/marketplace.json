@@ -1,0 +1,13 @@
+{
+  "name": "devpanl-claude-plugin",
+  "owner": {
+    "name": "Franck Birba",
+    "url": "https://github.com/franckbirba"
+  },
+  "plugins": [
+    {
+      "name": "devpanl",
+      "source": "."
+    }
+  ]
+}
