@@ -7,7 +7,7 @@
   "plugins": [
     {
       "name": "devpanl",
-      "source": "."
+      "source": "./"
     }
   ]
 }
