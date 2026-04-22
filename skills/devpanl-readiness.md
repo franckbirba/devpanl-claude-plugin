@@ -130,3 +130,16 @@ Doctor reports per-check status:
 - ✓ green: ready
 - ⚠ yellow: works but suboptimal (e.g. forbidden_paths missing some heuristic)
 - ✗ red: blocking (e.g. test command missing) — refuse to dispatch
+
+## Check: Storybook authoring is wired
+
+A project is storybook-ready when:
+
+1. It has a `stories/` folder at the repo root (even if only `.keep` for
+   now — signals intent and prevents the sync workflow from failing).
+2. It has `.github/workflows/sync-stories.yml` invoking the reusable
+   workflow from dev-panel with a valid `project-slug`.
+3. The repo secrets `STORYBOOK_SYNC_SSH_KEY` and `VPS_HOST` are set.
+
+If any of those are missing, flag it. Fix path: re-run `/devpanl:init`,
+which now scaffolds the folder and caller workflow.
