@@ -34,6 +34,7 @@ Use `Glob` and `Read` to gather:
 - Repo info: `git remote get-url origin` (parse owner/name), `git symbolic-ref --short HEAD` (default branch fallback), `gh repo view --json defaultBranchRef --jq .defaultBranchRef.name` if `gh` is on PATH.
 - Forbidden-paths candidates: `migrations/`, `db/migrate/`, `prisma/`, `.env*`, lockfiles, `dist/`, `build/`, `out/`, `target/`, `infra/`, `terraform/`, `k8s/`.
 - Test framework hint: search `package.json` deps for `vitest`/`jest`/`mocha`/`playwright`/`cypress`; `Cargo.toml` for `[[test]]`; `pyproject.toml` for `pytest`.
+- Widget integration: if `@devpanel/react` appears in `package.json` (dependencies, devDependencies, or peerDependencies), `Grep` for `<DevPanel` across `src/`, `app/`, `pages/`, `components/`. Record the first match (file + line). In that file, look for the props currently passed — specifically whether a `user=` attribute is present. Also detect the auth source by grepping for common hooks: `useAuth`, `useUser`, `useSession`, `useCurrentUser`, `getAuth()`, `auth()`, and note the import paths (`@auth0/...`, `next-auth/...`, `@clerk/...`, `@supabase/auth-helpers-...`, `lucia`, etc.). Do NOT edit the mount — only observe and report.
 
 ### Step 2 — Resolve commands
 
@@ -80,6 +81,8 @@ If a `## DevPanel integration` heading already exists, replace its body with the
 
 If `CLAUDE.md` doesn't exist at all, create a minimal one with the project name as `# Title` and the integration section underneath.
 
+**Widget keys:** include `Widget mount file:` and `Widget user source:` only when `@devpanel/react` is actually in the project deps. If the mount is detected but `user=` is missing, set `Widget user source: __SET_ME__` and surface it in "Needs attention" with the exact file path so `/devpanl:update-widget` can pick it up later.
+
 #### `.mcp.json` (create or patch)
 
 Merge `mcpServers.devpanel` into existing config. Don't drop other MCP entries the project already has (plane, github, etc.). The devpanel entry is HTTP, points at `https://devpanl.dev/mcp`, and reads its API key from env `${DEVPANEL_API_KEY}`.
@@ -114,6 +117,7 @@ Needs attention
 ---------------
 - .devpanlrc.json#plane.project_id: set to the UUID of this project's Plane.
 - .agents/designer: add design.system_id to .devpanlrc.json once a Penpot frame exists.
+- Widget mount at src/App.jsx:42 is missing `user=` — run /devpanl:update-widget to wire it.
 
 Doctor checks
 -------------

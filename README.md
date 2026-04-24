@@ -45,6 +45,7 @@ After init, edit any unresolved values flagged in the report (typically just `pl
 - `/devpanl:doctor` — verify readiness without modifying files. Reports ✓/⚠/✗ per check.
 - `/devpanl:dispatch <DEVPA-NN | uuid>` — kick off a workflow on a Plane work item.
 - `/devpanl:pull-backlog [--enqueue]` — preview (or trigger) the agent-ready queue.
+- `/devpanl:update-widget` — wire the `@devpanel/react` widget `user` prop to the host app's auth so captures carry reporter identity. Interactive: shows a diff and asks before writing.
 
 ## How agent dispatch actually works
 

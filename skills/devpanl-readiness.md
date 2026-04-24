@@ -78,6 +78,32 @@ If the project also wants direct Plane / GitHub access, those can be added but a
 
 Every agent run must terminate with a JSON object as the last fenced code block. See `job-output-contract` skill. Without this, `parseResult` in the worker can't extract `status`, `summary`, `artifacts`, and the workflow engine treats the job as failed.
 
+### 6. Widget integration (when the project embeds `@devpanel/react`)
+
+Projects that render the in-app bug/feature widget must pass the authenticated user so reports are attributable. Required keys in the `## DevPanel integration` section of `CLAUDE.md`:
+
+```markdown
+- Widget mount file: `<path/to/DevPanel-mount.jsx>` *(omit if no widget)*
+- Widget user source: `<hook-or-expression, e.g. useAuth().user>` *(omit if no widget)*
+```
+
+The widget API (see `@devpanel/react`):
+
+```jsx
+<DevPanel
+  apiUrl={import.meta.env.VITE_DEVPANEL_URL}
+  apiKey={import.meta.env.VITE_DEVPANEL_API_KEY}
+  user={{ id: authUser.id, name: authUser.name, email: authUser.email }}
+/>
+```
+
+- `user` is **optional** — omitting it keeps the widget working (backward compat).
+- `user` must be a plain object. Known fields: `id`, `name`, `email`. Extra fields are preserved in `reporter_extra`.
+- Single-user apps (e.g. EDMS) still benefit by passing the one user so the dashboard shows who filed.
+- Multi-user apps (e.g. Zeno) MUST pass `user` — otherwise tickets land anonymously and triage has to guess.
+
+See the per-project widget-update flow in `widget-integration` skill.
+
 ## How the analyzer detects the project
 
 Run these in order, stop at the first match:
@@ -124,6 +150,9 @@ For each SOUL, run a smoke check:
 3. Does `.mcp.json` parse + does `${DEVPANEL_API_KEY}` resolve in the shell env?
 4. Does `git remote get-url origin` match `.devpanlrc.json#github.repo`?
 5. Is `plane.project_id` resolvable? (Try `curl -s -H "X-API-Key: $PLANE_API_KEY" "https://plane.devpanl.dev/api/v1/workspaces/devpanl/projects/<id>/" | jq .name` if PLANE_API_KEY is in env.)
+6. **Widget integration check** (only if `@devpanel/react` is in `package.json#dependencies` or `peerDependencies`):
+   - Grep for `<DevPanel` in the repo. Expected: at least one mount file.
+   - For each mount, check the JSX props include a `user=` attribute. Missing `user=` on a multi-user app (detected via presence of auth libs: `@auth0`, `next-auth`, `clerk`, `lucia`, `firebase/auth`, `@supabase/auth-helpers`, etc.) is ⚠ yellow; on a single-user app it is ⚠ yellow too (widget still works but reports are anonymous).
 
 Doctor reports per-check status:
 
