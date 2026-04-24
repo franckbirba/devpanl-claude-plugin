@@ -1,6 +1,6 @@
 {
   "name": "devpanl",
-  "description": "Wire any project into the DevPanel autonomous agent team. Generates .agents SOULs calibrated to the codebase, configures MCP, and exposes /devpanl:init, /devpanl:doctor, /devpanl:dispatch.",
-  "version": "0.1.0",
-  "keywords": ["devpanel", "agents", "automation", "plane", "github", "ci"]
+  "description": "Wire any project into the DevPanel autonomous agent team. Generates .agents SOULs calibrated to the codebase, configures MCP, and exposes /devpanl:init, /devpanl:doctor, /devpanl:dispatch, /devpanl:update-widget.",
+  "version": "0.2.0",
+  "keywords": ["devpanel", "agents", "automation", "plane", "github", "ci", "widget"]
 }
