@@ -113,24 +113,35 @@ TL;DR:
   `package.json` under `stories/`.
 ```
 
-## 5. Repo secrets reminder
+## 5. Capture the VPS host once per machine
 
-Print this at the end, every run (it's cheap and easy to miss):
+Read `~/.devpanl/vps-host`. If it exists, print `vps host: <value> (cached)` and skip to step 6.
+
+If it does not exist:
+
+1. Ask the user **once**: `VPS host for ui.devpanl.dev (e.g. deploy@ui.devpanl.dev):`
+2. Write the answer to `~/.devpanl/vps-host` (creating `~/.devpanl/` with `mkdir -p` if needed).
+3. Print `vps host: <value> (cached at ~/.devpanl/vps-host — future projects won't ask)`.
+
+This is the only question the command ever asks, and only once per machine. Every subsequent `/devpanl:add-storybook` on this machine reuses the cached value.
+
+## 6. Repo secrets reminder
+
+Print this at the end, every run:
 
 ```
 Repo secrets required for sync to succeed on the next push to main:
   - STORYBOOK_SYNC_SSH_KEY
   - VPS_HOST
 
-Provision both in one shot (idempotent — generates a per-project key,
-appends it to the VPS, sets the GitHub secrets):
+Provision both in one shot (uses the cached vps-host, idempotent):
 
   bash <(curl -fsSL https://raw.githubusercontent.com/franckbirba/devpanl-claude-plugin/main/scripts/wire-storybook-secrets.sh)
 
 Or set them by hand in GitHub → Settings → Secrets and variables → Actions.
 ```
 
-## 6. Final report
+## 7. Final report
 
 Print a compact summary, one line per artefact, prefixed with `create` / `skip` / `warn`. End with the catalogue URL:
 

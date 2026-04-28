@@ -88,20 +88,32 @@ CACHE_DIR="$HOME/.devpanl"
 HOST_CACHE="$CACHE_DIR/vps-host"
 mkdir -p "$CACHE_DIR"
 
-VPS_HOST="${DEVPANL_VPS_HOST:-}"
-if [[ -z "$VPS_HOST" && -f "$HOST_CACHE" ]]; then
+# Precedence: cache (per-machine, set once) > $DEVPANL_VPS_HOST (override) > prompt.
+VPS_HOST=""
+CACHED_FROM=""
+if [[ -f "$HOST_CACHE" ]]; then
   VPS_HOST="$(<"$HOST_CACHE")"
+  CACHED_FROM="cached"
+fi
+if [[ -z "$VPS_HOST" && -n "${DEVPANL_VPS_HOST:-}" ]]; then
+  VPS_HOST="$DEVPANL_VPS_HOST"
+  CACHED_FROM="env"
 fi
 if [[ -z "$VPS_HOST" ]]; then
   if [[ -t 0 ]]; then
     read -r -p "VPS host (e.g. deploy@ui.devpanl.dev): " VPS_HOST
+    CACHED_FROM="prompt"
   else
-    err "VPS host not set. Pass DEVPANL_VPS_HOST=... or run interactively."
+    err "VPS host not set. Set it once with: echo 'deploy@ui.devpanl.dev' > $HOST_CACHE"
   fi
 fi
 [[ -n "$VPS_HOST" ]] || err "VPS host is empty."
 printf '%s' "$VPS_HOST" > "$HOST_CACHE"
-ok "vps host: $VPS_HOST (cached at $HOST_CACHE)"
+case "$CACHED_FROM" in
+  cached) ok "vps host: $VPS_HOST (from $HOST_CACHE)" ;;
+  env)    ok "vps host: $VPS_HOST (from \$DEVPANL_VPS_HOST — cached for next runs)" ;;
+  prompt) ok "vps host: $VPS_HOST (cached at $HOST_CACHE — future projects won't ask)" ;;
+esac
 
 # --- keypair ----------------------------------------------------------------
 
