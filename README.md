@@ -46,6 +46,7 @@ After init, edit any unresolved values flagged in the report (typically just `pl
 - `/devpanl:dispatch <DEVPA-NN | uuid>` — kick off a workflow on a Plane work item.
 - `/devpanl:pull-backlog [--enqueue]` — preview (or trigger) the agent-ready queue.
 - `/devpanl:update-widget` — wire the `@devpanel/react` widget `user` prop to the host app's auth so captures carry reporter identity. Interactive: shows a diff and asks before writing.
+- `/devpanl:add-storybook` — opt-in: scaffold `stories/`, the sync workflow, and the UI section in `CLAUDE.md` so this project publishes to https://ui.devpanl.dev/&lt;slug&gt;/. Idempotent.
 
 ## How agent dispatch actually works
 

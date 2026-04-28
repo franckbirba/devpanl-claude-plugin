@@ -8,39 +8,8 @@ Use the `devpanl-analyzer` subagent. Do not ask any questions — silent mode. D
 
 Output the analyzer's "generated / needs attention / doctor checks" report at the end. After that, do nothing else — the user reviews the diff with git and decides what to commit.
 
-## Scaffold Storybook authoring
+Storybook scaffolding is **not** part of init — it's opt-in via `/devpanl:add-storybook`. Mention it in the final report only if the project does not yet have `stories/` or `.github/workflows/sync-stories.yml`:
 
-Agents and humans in this project will author stories in `stories/`. The
-catalogue lives at https://ui.devpanl.dev and pulls stories on every
-push to main.
-
-1. Create `stories/.keep` if `stories/` does not yet exist, so git
-   tracks the folder even empty.
-
-2. Create `.github/workflows/sync-stories.yml` with:
-
-```yaml
-name: Sync stories
-
-on:
-  push:
-    branches: [main]
-    paths: ['stories/**']
-  workflow_dispatch:
-
-jobs:
-  sync:
-    uses: franckbirba/dev-panel/.github/workflows/sync-stories.yml@main
-    with:
-      project-slug: <PROJECT-SLUG>
-    secrets:
-      SYNC_SSH_KEY: ${{ secrets.STORYBOOK_SYNC_SSH_KEY }}
-      SYNC_HOST: ${{ secrets.VPS_HOST }}
 ```
-
-Replace `<PROJECT-SLUG>` with the same slug used everywhere else in
-`.devpanlrc.json` (lowercase, hyphen-safe, ≤ 30 chars).
-
-3. Print a reminder for the human that the two repo secrets
-   `STORYBOOK_SYNC_SSH_KEY` and `VPS_HOST` must be provisioned before
-   the first push to main.
+ℹ︎ This project is not yet wired to ui.devpanl.dev. Run /devpanl:add-storybook to onboard.
+```

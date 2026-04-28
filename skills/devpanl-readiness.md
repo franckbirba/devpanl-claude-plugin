@@ -160,15 +160,22 @@ Doctor reports per-check status:
 - ⚠ yellow: works but suboptimal (e.g. forbidden_paths missing some heuristic)
 - ✗ red: blocking (e.g. test command missing) — refuse to dispatch
 
-## Check: Storybook authoring is wired
+## Optional check: Storybook authoring is wired
 
-A project is storybook-ready when:
+This check is **optional** — not every project publishes UI to the
+shared catalogue. Doctor reports it as `yes` / `no` / `N/A`:
 
-1. It has a `stories/` folder at the repo root (even if only `.keep` for
-   now — signals intent and prevents the sync workflow from failing).
-2. It has `.github/workflows/sync-stories.yml` invoking the reusable
-   workflow from dev-panel with a valid `project-slug`.
-3. The repo secrets `STORYBOOK_SYNC_SSH_KEY` and `VPS_HOST` are set.
+- `yes` — both `stories/` and `.github/workflows/sync-stories.yml` are
+  present; the workflow calls
+  `franckbirba/dev-panel/.github/workflows/sync-stories.yml@main` with
+  a non-empty `project-slug`.
+- `no` — exactly one of the two is present (partial wiring; flag it).
+- `N/A` — neither is present and the project has no UI surface
+  (e.g. pure backend/library). Treat as informational, not a warning.
 
-If any of those are missing, flag it. Fix path: re-run `/devpanl:init`,
-which now scaffolds the folder and caller workflow.
+If the project has UI but is reported `no`, the fix path is
+`/devpanl:add-storybook` (opt-in scaffold). Repo secrets
+`STORYBOOK_SYNC_SSH_KEY` and `VPS_HOST` must also be set on the GitHub
+repo for sync to succeed — doctor cannot verify this from inside the
+checkout, so it always prints a one-line reminder when the wiring is
+present.

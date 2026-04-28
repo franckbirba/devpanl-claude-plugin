@@ -7,6 +7,7 @@ Verify this project's DevPanel integration. Use the `devpanl-analyzer` subagent 
 - Re-run the readiness scan from `devpanl-readiness` skill.
 - Diff the detected values against `.devpanlrc.json`, `CLAUDE.md` integration section, and every `.agents/<role>/SOUL.md`.
 - For each readiness check, report ✓ / ⚠ / ✗ with the specific fix.
+- Report the optional `storybook wired?` check as `yes` / `no` / `N/A` per the rules in `devpanl-readiness`. Fix path when `no`: run `/devpanl:add-storybook`.
 
 Do **not** modify files in this command — verify only. If repairs are needed, the user runs `/devpanl:init` to apply them.
 
