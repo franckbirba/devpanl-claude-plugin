@@ -6,9 +6,13 @@
 #   1. Detects the project slug (matches /devpanl:add-storybook logic).
 #   2. Generates a per-project ed25519 keypair under
 #      ~/.devpanl/keys/storybook_sync_<slug> (skips if it already exists).
-#   3. SSHes to $VPS_HOST and appends the public key to the remote
-#      authorized_keys (skips if the key is already there).
-#   4. Writes STORYBOOK_SYNC_SSH_KEY and VPS_HOST as repo secrets via gh.
+#   3. Installs ~/bin/storybook-sync-rsync on the VPS (skips if hash matches).
+#      This is a forced-command wrapper that allows ONLY the operations the
+#      reusable workflow performs, scoped to <slug>: nothing else.
+#   4. Appends (or replaces) the public key in the VPS authorized_keys with
+#      a command="/home/deploy/bin/storybook-sync-rsync <slug>" prefix and
+#      the usual no-pty/no-port-forwarding restrictions.
+#   5. Writes STORYBOOK_SYNC_SSH_KEY and VPS_HOST as repo secrets via gh.
 #
 # Requires: bash, ssh, ssh-keygen, gh (logged in), git.
 #
@@ -132,28 +136,60 @@ fi
 
 PUBKEY="$(<"$KEY_PATH.pub")"
 
-# --- push pubkey to vps -----------------------------------------------------
+# --- install forced-command wrapper on vps (idempotent) ---------------------
 
-REMOTE_LINE="$PUBKEY"
-# Append only if not already there. The remote check is one round-trip.
+# Resolves $SCRIPT_DIR/vps/storybook-sync-rsync. Falls back to a curl from
+# main when invoked via bash <(curl …) (no on-disk SCRIPT_DIR sibling).
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" 2>/dev/null && pwd)"
+WRAPPER_LOCAL="$SCRIPT_DIR/vps/storybook-sync-rsync"
+if [[ ! -f "$WRAPPER_LOCAL" ]]; then
+  WRAPPER_LOCAL="$(mktemp)"
+  curl -fsSL https://raw.githubusercontent.com/franckbirba/devpanl-claude-plugin/main/scripts/vps/storybook-sync-rsync \
+    -o "$WRAPPER_LOCAL" \
+    || err "could not fetch storybook-sync-rsync wrapper"
+fi
+chmod +x "$WRAPPER_LOCAL"
+
+# Hash the local copy so we can detect drift on the VPS and refresh.
+LOCAL_SHA="$(shasum -a 256 "$WRAPPER_LOCAL" | awk '{print $1}')"
+
+REMOTE_SHA="$(ssh -o BatchMode=yes -o ConnectTimeout=5 "$VPS_HOST" \
+  'sha256sum ~/bin/storybook-sync-rsync 2>/dev/null | awk "{print \$1}"' 2>/dev/null || true)"
+
+if [[ "$REMOTE_SHA" == "$LOCAL_SHA" ]]; then
+  ok "wrapper present on $VPS_HOST (sha matches)"
+else
+  scp -o BatchMode=yes "$WRAPPER_LOCAL" "$VPS_HOST:storybook-sync-rsync.tmp" >/dev/null \
+    || err "scp wrapper to $VPS_HOST failed"
+  ssh -o BatchMode=yes "$VPS_HOST" '
+    set -e
+    mkdir -p ~/bin
+    mv ~/storybook-sync-rsync.tmp ~/bin/storybook-sync-rsync
+    chmod 755 ~/bin/storybook-sync-rsync
+  ' || err "installing wrapper on $VPS_HOST failed"
+  ok "wrapper installed: $VPS_HOST:~/bin/storybook-sync-rsync"
+fi
+
+# --- push (locked-down) pubkey to vps ---------------------------------------
+
+PREFIX="command=\"/home/deploy/bin/storybook-sync-rsync $SLUG\",no-pty,no-port-forwarding,no-agent-forwarding,no-X11-forwarding,no-user-rc"
+LOCKED_LINE="$PREFIX $PUBKEY"
+
+# Use a fingerprint from the key body to find any prior unlocked or differently-prefixed entry
+# matching this same key, so we can atomically replace it with the locked-down version.
+KEY_BODY="$(awk '{print $2}' "$KEY_PATH.pub")"
+
 if ssh -o BatchMode=yes -o ConnectTimeout=5 "$VPS_HOST" "
   set -e
-  mkdir -p ~/.ssh
-  chmod 700 ~/.ssh
-  touch ~/.ssh/authorized_keys
+  mkdir -p ~/.ssh && chmod 700 ~/.ssh
+  touch ~/.ssh/authorized_keys && chmod 600 ~/.ssh/authorized_keys
+  TMP=\$(mktemp)
+  grep -vF '$KEY_BODY' ~/.ssh/authorized_keys > \"\$TMP\" || true
+  echo '$LOCKED_LINE' >> \"\$TMP\"
+  mv \"\$TMP\" ~/.ssh/authorized_keys
   chmod 600 ~/.ssh/authorized_keys
-  if grep -qxF '$REMOTE_LINE' ~/.ssh/authorized_keys; then
-    echo present
-  else
-    echo '$REMOTE_LINE' >> ~/.ssh/authorized_keys
-    echo appended
-  fi
 " 2>/tmp/wire-storybook-ssh.err; then
-  RES="$(ssh -o BatchMode=yes "$VPS_HOST" "grep -qxF '$REMOTE_LINE' ~/.ssh/authorized_keys && echo present || echo missing" 2>/dev/null || echo unknown)"
-  case "$RES" in
-    present) ok "pubkey installed on $VPS_HOST" ;;
-    *) warn "pubkey upload uncertain — verify ~/.ssh/authorized_keys on $VPS_HOST" ;;
-  esac
+  ok "pubkey installed on $VPS_HOST (locked to slug=$SLUG, rsync-only)"
 else
   cat /tmp/wire-storybook-ssh.err >&2 || true
   err "ssh to $VPS_HOST failed. Make sure you can: ssh $VPS_HOST"

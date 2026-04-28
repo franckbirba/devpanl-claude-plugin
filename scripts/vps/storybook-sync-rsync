@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+# storybook-sync-rsync — forced-command wrapper for storybook sync keys.
+#
+# Each authorized_keys entry passes the project slug as $1 in its
+# command="..." prefix. The wrapper then constrains $SSH_ORIGINAL_COMMAND
+# to one of the operations the reusable workflow performs, scoped to
+# that single slug.
+set -euo pipefail
+
+BASE="/home/deploy/dev-panel/storybook-stories"
+SLUG="${1:-}"
+CMD="${SSH_ORIGINAL_COMMAND:-}"
+
+if [[ -z "$SLUG" ]]; then
+  echo "storybook-sync: missing slug" >&2
+  exit 1
+fi
+if ! [[ "$SLUG" =~ ^[a-z0-9][a-z0-9-]{0,30}$ ]]; then
+  echo "storybook-sync: invalid slug '$SLUG'" >&2
+  exit 1
+fi
+
+ROOT="$BASE/$SLUG"
+
+# Allow the workflow's "mkdir -p '<root>'" and "mkdir -p '<root>/_src'" preparatory steps.
+case "$CMD" in
+  "mkdir -p '$ROOT'"|"mkdir -p '$ROOT/_src'")
+    exec /bin/sh -c "$CMD"
+    ;;
+esac
+
+# Allow rsync --server. Workflow's outer command:
+#   rsync -av --delete --exclude=_src/ -e ssh stories/ user@host:<ROOT>/
+# rsync then SSHes and runs:
+#   rsync --server -vlogDtprz --delete --exclude=_src/ . <ROOT>/
+# We pass through unchanged — rsync resolves <ROOT>/ relative to $HOME, which
+# is fine because $ROOT is absolute.
+if [[ "$CMD" =~ ^rsync\ --server(\ |$) ]]; then
+  # shellcheck disable=SC2086
+  exec $CMD
+fi
+
+echo "storybook-sync: refused command for slug=$SLUG: $CMD" >&2
+exit 1
