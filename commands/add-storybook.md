@@ -121,7 +121,13 @@ Print this at the end, every run (it's cheap and easy to miss):
 Repo secrets required for sync to succeed on the next push to main:
   - STORYBOOK_SYNC_SSH_KEY
   - VPS_HOST
-Set them in GitHub → Settings → Secrets and variables → Actions.
+
+Provision both in one shot (idempotent — generates a per-project key,
+appends it to the VPS, sets the GitHub secrets):
+
+  bash <(curl -fsSL https://raw.githubusercontent.com/franckbirba/devpanl-claude-plugin/main/scripts/wire-storybook-secrets.sh)
+
+Or set them by hand in GitHub → Settings → Secrets and variables → Actions.
 ```
 
 ## 6. Final report
