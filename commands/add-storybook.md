@@ -1,10 +1,13 @@
 ---
-description: Onboard this project to ui.devpanl.dev — scaffold stories/, the sync workflow, and the UI section in CLAUDE.md. Idempotent.
+description: Onboard this project to ui.devpanl.dev — scaffold stories/, the sync workflow, set GitHub secrets. Idempotent.
+argument-hint: "[--skip-secrets]"
 ---
 
 Wire this project into the shared Storybook catalogue at https://ui.devpanl.dev. Opt-in companion to `/devpanl:init` — never bolted into init.
 
 This command is **idempotent**: running it twice is safe. For each step, detect what already exists and either skip it or print what's already there.
+
+If `$ARGUMENTS` contains `--skip-secrets`, skip step 6 (secret provisioning) and only print a reminder. Default behavior is to provision the secrets automatically.
 
 ## 1. Resolve the project slug
 
@@ -125,34 +128,57 @@ If it does not exist:
 
 This is the only question the command ever asks, and only once per machine. Every subsequent `/devpanl:add-storybook` on this machine reuses the cached value.
 
-## 6. Repo secrets reminder
+## 6. Provision GitHub Actions secrets automatically
 
-Print this at the end, every run:
+Skip this step entirely if `$ARGUMENTS` contains `--skip-secrets` — print a one-line reminder pointing at `${CLAUDE_PLUGIN_ROOT}/scripts/wire-storybook-secrets.sh` and move on.
+
+Otherwise, preflight: check that `gh` and `ssh` are on `$PATH` and that `gh auth status` succeeds. If any check fails, **do not error** — print:
 
 ```
-Repo secrets required for sync to succeed on the next push to main:
-  - STORYBOOK_SYNC_SSH_KEY
-  - VPS_HOST
-
-Provision both in one shot (uses the cached vps-host, idempotent):
-
-  bash <(curl -fsSL https://raw.githubusercontent.com/franckbirba/devpanl-claude-plugin/main/scripts/wire-storybook-secrets.sh)
-
-Or set them by hand in GitHub → Settings → Secrets and variables → Actions.
+⚠ skipping automatic secret provisioning: <missing tool or gh not authenticated>
+  Fix and re-run, or run manually:
+    bash ${CLAUDE_PLUGIN_ROOT}/scripts/wire-storybook-secrets.sh
 ```
+
+…and continue to step 7.
+
+If preflight passes, run the bundled script directly via Bash tool:
+
+```
+bash ${CLAUDE_PLUGIN_ROOT}/scripts/wire-storybook-secrets.sh
+```
+
+The script:
+
+- Reads `~/.devpanl/vps-host` (cached value from step 5 — no prompt).
+- Generates `~/.devpanl/keys/storybook_sync_<slug>` if it doesn't exist; reuses it if it does.
+- Appends the public key to the VPS `~/.ssh/authorized_keys` (skips if already there).
+- Sets `STORYBOOK_SYNC_SSH_KEY` and `VPS_HOST` as repo secrets via `gh secret set`.
+
+Stream the script's output verbatim so the user sees what happened. If the script exits non-zero, surface its last 20 lines and tell the user to re-run with `--skip-secrets` if they want to proceed without secrets.
 
 ## 7. Final report
 
-Print a compact summary, one line per artefact, prefixed with `create` / `skip` / `warn`. End with the catalogue URL:
+Print a compact summary, one line per artefact, prefixed with `create` / `skip` / `warn`. Then end with one of these, depending on what happened in step 6:
 
-```
-✓ storybook wired — stories will sync to https://ui.devpanl.dev/<slug>/ on next push to main.
-```
+- Secrets provisioned cleanly:
 
-If any step printed `warn`, end with:
+  ```
+  ✓ storybook wired — push to main and stories sync to https://ui.devpanl.dev/<slug>/.
+  ```
 
-```
-⚠ storybook partially wired — see warnings above.
-```
+- Secrets skipped (--skip-secrets, or preflight failed):
+
+  ```
+  ⚠ storybook scaffolded but secrets not provisioned — run:
+      bash ${CLAUDE_PLUGIN_ROOT}/scripts/wire-storybook-secrets.sh
+    then push to main.
+  ```
+
+- Any other step printed `warn`:
+
+  ```
+  ⚠ storybook partially wired — see warnings above.
+  ```
 
 Do not commit. The user reviews the diff and commits themselves, same as `/devpanl:init`.
