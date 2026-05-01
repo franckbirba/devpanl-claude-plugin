@@ -1,6 +1,6 @@
 {
   "name": "devpanl",
   "description": "Wire any project into the DevPanel autonomous agent team. Generates .agents SOULs calibrated to the codebase, configures MCP, and exposes /devpanl:init, /devpanl:doctor, /devpanl:dispatch, /devpanl:update-widget, /devpanl:add-storybook, /devpanl:install-glitchtip-sdk, /devpanl:wire-glitchtip.",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "keywords": ["devpanel", "agents", "automation", "plane", "github", "ci", "widget", "storybook", "glitchtip", "errors"]
 }

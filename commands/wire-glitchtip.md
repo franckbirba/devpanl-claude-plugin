@@ -58,20 +58,29 @@ Resolve in this order, stop at the first hit per field. Do not ask the user any 
 
 If `$ARGUMENTS` contains `--bridge-url <url>`, use it verbatim (escape-hatch for non-default deployments). Otherwise the script defaults to the internal Docker URL above.
 
-## 2. Verify required env vars
+## 2. Resolve required secrets (file-first, env-fallback)
 
-Both must be present in the shell or the run will fail:
+The script handles this automatically — you don't need to export anything by hand on the agents host. Lookup order per secret:
 
-- `GLITCHTIP_API_TOKEN` — Bearer token from `glitchtip.devpanl.dev` Profile → Auth Tokens with `org:admin + project:admin + project:write` (DEVPA-168 step 6).
-- `GLITCHTIP_BRIDGE_HMAC_SECRET` — same value that lives in services-VPS `.env.production` under `GLITCHTIP_BRIDGE_HMAC_SECRET`.
+1. **File** (canonical on the agents host, mode 600, owner `deploy`):
+   - `/home/deploy/.claude/secrets/glitchtip-api-token` → `GLITCHTIP_API_TOKEN`
+   - `/home/deploy/.claude/secrets/glitchtip-bridge-hmac` → `GLITCHTIP_BRIDGE_HMAC_SECRET`
+2. **Env var** of the same name (portability for CI / local dev / non-agents hosts).
 
-If either is missing, print:
+Override the secret-store root with `GLITCHTIP_SECRETS_DIR=/some/path` if running off a non-default layout.
+
+What each secret is:
+
+- `GLITCHTIP_API_TOKEN` — Bearer token from `glitchtip.devpanl.dev` → Profile → Auth Tokens with `org:admin + project:admin + project:write` scopes (DEVPA-168 step 6).
+- `GLITCHTIP_BRIDGE_HMAC_SECRET` — same value that lives in services-VPS `.env.production` under `GLITCHTIP_BRIDGE_HMAC_SECRET`. Used as the `?secret=` querystring on the bridge URL.
+
+If neither file nor env resolves a secret, the script prints:
 
 ```
-✗ <var> not set. Source it from the agents-host secrets store and re-run.
+✗ GLITCHTIP_API_TOKEN not set (no file at /home/deploy/.claude/secrets/glitchtip-api-token, no env var)
 ```
 
-…and stop. Do not proceed to the API call.
+…and exits non-zero. Fix on the agents host: ensure the file exists and is readable by the running user. Fix elsewhere: `export GLITCHTIP_API_TOKEN=...`.
 
 ## 3. Run the wiring script
 

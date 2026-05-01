@@ -5,9 +5,23 @@
 # Idempotent: if an alert with the same name already exists for the project,
 # only patches the URL/recipient when it drifts; otherwise no-op.
 #
-# Inputs (env > flags):
+# Secret resolution (file-first → env-fallback, per DEVPA-170 2026-05-01):
+#
+#   1. /home/deploy/.claude/secrets/glitchtip-api-token   (mode 600, owner deploy)
+#      → if readable, use as GLITCHTIP_API_TOKEN.
+#   2. /home/deploy/.claude/secrets/glitchtip-bridge-hmac (mode 600, owner deploy)
+#      → if readable, use as GLITCHTIP_BRIDGE_HMAC_SECRET.
+#   3. Otherwise fall back to env vars of the same name (portability for hosts
+#      that don't have the secret store laid out the agents-host way).
+#
+# Override the secret-store root with GLITCHTIP_SECRETS_DIR=/some/path.
+#
+# Inputs:
 #   GLITCHTIP_API_TOKEN              required — bearer for glitchtip.devpanl.dev/api
+#                                    (resolved from file or env, see above)
 #   GLITCHTIP_BRIDGE_HMAC_SECRET     required — querystring secret for the bridge
+#                                    (resolved from file or env, see above)
+#   GLITCHTIP_SECRETS_DIR            optional — defaults to /home/deploy/.claude/secrets
 #   GLITCHTIP_BASE_URL               optional — defaults to https://glitchtip.devpanl.dev
 #   GLITCHTIP_ORG                    optional — defaults to devpanl-studio
 #   --team   <slug>                  required — GlitchTip team slug owning the project
@@ -52,8 +66,37 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-[[ -n "${GLITCHTIP_API_TOKEN:-}" ]] || err "GLITCHTIP_API_TOKEN not set"
-[[ -n "${GLITCHTIP_BRIDGE_HMAC_SECRET:-}" ]] || err "GLITCHTIP_BRIDGE_HMAC_SECRET not set"
+# Secret resolution: file-first, env-fallback. Files are the canonical
+# source on the agents host (DEVPA-170, 2026-05-01); env vars are the
+# portable fallback for non-agents-host runs (CI, local dev).
+GLITCHTIP_SECRETS_DIR="${GLITCHTIP_SECRETS_DIR:-/home/deploy/.claude/secrets}"
+
+read_secret_file() {
+  local path="$1"
+  [[ -r "$path" ]] || return 1
+  local value
+  value="$(<"$path")"
+  # strip a single trailing newline; preserve any other content verbatim
+  value="${value%$'\n'}"
+  [[ -n "$value" ]] || return 1
+  printf '%s' "$value"
+}
+
+if [[ -z "${GLITCHTIP_API_TOKEN:-}" ]]; then
+  if v="$(read_secret_file "$GLITCHTIP_SECRETS_DIR/glitchtip-api-token")"; then
+    GLITCHTIP_API_TOKEN="$v"
+    info "GLITCHTIP_API_TOKEN: read from $GLITCHTIP_SECRETS_DIR/glitchtip-api-token"
+  fi
+fi
+if [[ -z "${GLITCHTIP_BRIDGE_HMAC_SECRET:-}" ]]; then
+  if v="$(read_secret_file "$GLITCHTIP_SECRETS_DIR/glitchtip-bridge-hmac")"; then
+    GLITCHTIP_BRIDGE_HMAC_SECRET="$v"
+    info "GLITCHTIP_BRIDGE_HMAC_SECRET: read from $GLITCHTIP_SECRETS_DIR/glitchtip-bridge-hmac"
+  fi
+fi
+
+[[ -n "${GLITCHTIP_API_TOKEN:-}" ]] || err "GLITCHTIP_API_TOKEN not set (no file at $GLITCHTIP_SECRETS_DIR/glitchtip-api-token, no env var)"
+[[ -n "${GLITCHTIP_BRIDGE_HMAC_SECRET:-}" ]] || err "GLITCHTIP_BRIDGE_HMAC_SECRET not set (no file at $GLITCHTIP_SECRETS_DIR/glitchtip-bridge-hmac, no env var)"
 [[ -n "$TEAM" ]] || err "--team <slug> required"
 [[ -n "$PROJECT" ]] || err "--project <slug> required"
 [[ -n "$DEVPANL_PROJECT_ID" ]] || err "--devpanl-project <uuid> required"
