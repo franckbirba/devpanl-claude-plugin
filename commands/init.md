@@ -13,3 +13,15 @@ Storybook scaffolding is **not** part of init — it's opt-in via `/devpanl:add-
 ```
 ℹ︎ This project is not yet wired to ui.devpanl.dev. Run /devpanl:add-storybook to onboard.
 ```
+
+GlitchTip wiring is **not** part of init either — it's opt-in (DEVPA-170), split in two halves so server-only or client-only projects can pick what they need:
+
+- `/devpanl:install-glitchtip-sdk` — drops a Sentry-compat SDK in the host source so server and/or client errors emit to `glitchtip.devpanl.dev`. Interactive (touches source).
+- `/devpanl:wire-glitchtip` — registers the `forward-to-devpanl` alert recipient on the GlitchTip side so events flow into the captures inbox. Idempotent (no source touched).
+
+Mention them in the final report only when missing:
+
+```
+ℹ︎ This project has no GlitchTip SDK installed (no @sentry/* in deps). Run /devpanl:install-glitchtip-sdk to start emitting errors.
+ℹ︎ This project's GlitchTip is not yet wired to the captures inbox. Run /devpanl:wire-glitchtip to forward events.
+```

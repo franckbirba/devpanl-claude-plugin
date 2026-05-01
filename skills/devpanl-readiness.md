@@ -160,6 +160,64 @@ Doctor reports per-check status:
 - ⚠ yellow: works but suboptimal (e.g. forbidden_paths missing some heuristic)
 - ✗ red: blocking (e.g. test command missing) — refuse to dispatch
 
+## Optional check: GlitchTip SDK is installed
+
+This check is **optional** — only relevant when the host project wants
+runtime errors flowing into `glitchtip.devpanl.dev`. The complement of
+the alert-wired check below: **SDK = events into GlitchTip**, **alert
+= events out of GlitchTip into the captures inbox**.
+
+Doctor reports it per surface (`server` / `client`) as `yes` / `no` /
+`N/A`:
+
+- `yes` for *server* — `package.json#dependencies` (or
+  `pyproject.toml`, `go.mod`) contains a Sentry SDK package
+  (`@sentry/node`, `@sentry/nextjs`, `sentry-sdk`, `sentry-go`) AND a
+  `Sentry.init` reference is grep-able in the entrypoint or
+  `instrument.{js,ts}`.
+- `yes` for *client* — `package.json#dependencies` contains
+  `@sentry/react` / `@sentry/nextjs` AND a `Sentry.init` reference is
+  grep-able in `instrument.{js,ts}` or equivalent.
+- `no` — surface is present (server or client per the detection rules
+  in `glitchtip-sdk-authoring`) but the SDK is missing.
+- `N/A` — surface not present (e.g. backend-only repo for client check,
+  static-content repo for both).
+
+Fix path when `no`: `/devpanl:install-glitchtip-sdk` (interactive, touches
+source). Doctor cannot reach the GlitchTip API or DSN store, so it does
+not verify whether the DSN is valid — only that the wiring is in place.
+
+The DSN value lives in `.env` (or deploy host secret store). Doctor
+optionally prints a one-line reminder when `.devpanlrc.json#glitchtip.dsn`
+is missing — set when the install command runs successfully.
+
+## Optional check: GlitchTip alert is wired
+
+This check is **optional** — not every project ships a GlitchTip
+project, and DEVPA-170 made wiring opt-in via `/devpanl:wire-glitchtip`.
+Doctor reports it as `yes` / `no` / `N/A`:
+
+- `yes` — `.devpanlrc.json` has `glitchtip.team` and
+  `glitchtip.project_slug` set to non-empty strings (and not
+  `__SET_ME__`).
+- `no` — exactly one of those keys is present (partial wiring; flag it).
+- `N/A` — neither is present and the project has no runtime error
+  surface that would benefit from forwarding (e.g. pure docs / static
+  asset repos). Treat as informational, not a warning.
+
+Doctor cannot reach the GlitchTip API from the host (no token in the
+checkout), so it cannot verify the alert exists upstream — it only
+verifies the local config. The fix path when `no` is
+`/devpanl:wire-glitchtip`. The host's `GLITCHTIP_API_TOKEN` and
+`GLITCHTIP_BRIDGE_HMAC_SECRET` env vars are required for that command
+to succeed, but doctor only prints a one-line reminder; it does not
+fail on missing env (those are agent-host concerns).
+
+The webhook URL the wire command registers is the **internal Docker
+URL** (`http://devpanel-api:3030/api/webhooks/glitchtip/<id>?secret=...`)
+because Cloudflare WAF rule 1010 blocks the GlitchTip worker on the
+public hostname (DEVPA-168 finding). Don't second-guess it in doctor.
+
 ## Optional check: Storybook authoring is wired
 
 This check is **optional** — not every project publishes UI to the

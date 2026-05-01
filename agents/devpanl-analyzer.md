@@ -58,7 +58,7 @@ For each, **diff-aware**: read the existing file (if any), compute the desired c
 
 #### `.devpanlrc.json` (create or patch)
 
-Merge with existing keys; never overwrite the user's `widget` or `storage` fields. Required additions/updates:
+Merge with existing keys; never overwrite the user's `widget`, `storage`, or `glitchtip` fields. Required additions/updates:
 
 ```json
 {
@@ -74,6 +74,13 @@ Merge with existing keys; never overwrite the user's `widget` or `storage` field
   }
 }
 ```
+
+Do not write a `glitchtip` block in `init` — it is wired opt-in via two commands (DEVPA-170):
+
+- `/devpanl:install-glitchtip-sdk` writes `glitchtip.dsn` after the user supplies it.
+- `/devpanl:wire-glitchtip` writes `glitchtip.team` and `glitchtip.project_slug` after the API call succeeds.
+
+If a `glitchtip` block already exists, preserve every key — never strip or rewrite it during init.
 
 #### `CLAUDE.md` (append or update section)
 
@@ -118,6 +125,8 @@ Needs attention
 - .devpanlrc.json#plane.project_id: set to the UUID of this project's Plane.
 - .agents/designer: add design.system_id to .devpanlrc.json once a Penpot frame exists.
 - Widget mount at src/App.jsx:42 is missing `user=` — run /devpanl:update-widget to wire it.
+- GlitchTip SDK not installed (no @sentry/* in deps) — run /devpanl:install-glitchtip-sdk to start emitting runtime errors.
+- GlitchTip alert not wired (no .devpanlrc.json#glitchtip.team) — run /devpanl:wire-glitchtip once the SDK is in place and a GlitchTip project exists.
 
 Doctor checks
 -------------
