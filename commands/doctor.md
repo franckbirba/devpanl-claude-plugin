@@ -10,6 +10,7 @@ Verify this project's DevPanel integration. Use the `devpanl-analyzer` subagent 
 - Report the optional `storybook wired?` check as `yes` / `no` / `N/A` per the rules in `devpanl-readiness`. Fix path when `no`: run `/devpanl:add-storybook`.
 - Report the optional `glitchtip SDK installed?` check per surface (server / client) as `yes` / `no` / `N/A` per the rules in `devpanl-readiness`. Fix path when `no`: run `/devpanl:install-glitchtip-sdk`.
 - Report the optional `glitchtip alert wired?` check as `yes` / `no` / `N/A` per the rules in `devpanl-readiness`. Fix path when `no`: run `/devpanl:wire-glitchtip`.
+- Report the optional `plane conventions wired?` check as `yes` / `no` / `N/A` per the rules in `devpanl-readiness`. Fix path when `no`: run `/devpanl:install-plane-conventions`.
 
 Do **not** modify files in this command — verify only. If repairs are needed, the user runs `/devpanl:init` to apply them.
 

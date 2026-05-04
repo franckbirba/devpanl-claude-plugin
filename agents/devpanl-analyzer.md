@@ -127,6 +127,7 @@ Needs attention
 - Widget mount at src/App.jsx:42 is missing `user=` — run /devpanl:update-widget to wire it.
 - GlitchTip SDK not installed (no @sentry/* in deps) — run /devpanl:install-glitchtip-sdk to start emitting runtime errors.
 - GlitchTip alert not wired (no .devpanlrc.json#glitchtip.team) — run /devpanl:wire-glitchtip once the SDK is in place and a GlitchTip project exists.
+- Plane conventions skill not installed (no .claude/skills/plane-conventions/SKILL.md) — run /devpanl:install-plane-conventions to enforce uniform Plane usage across the team.
 
 Doctor checks
 -------------
@@ -143,6 +144,7 @@ Run /devpanl:doctor anytime to re-verify.
 
 - Ask questions. Use defaults; flag in the report.
 - Touch source code (you only manage `.agents/`, `.devpanlrc.json`, `.mcp.json`, and the integration section of `CLAUDE.md`).
+- Touch `.claude/skills/`, `.claude/hooks/`, or `.claude/settings.json` — those are managed by opt-in commands (`/devpanl:install-plane-conventions`, etc.). If they exist, leave them alone.
 - Delete or reorder existing fields in `.devpanlrc.json` / `.mcp.json` — merge, don't replace.
 - Generate stub SOULs that say "TODO: customize for your project". Either calibrate or omit.
 - Commit anything. The user runs git themselves after reviewing the diff.

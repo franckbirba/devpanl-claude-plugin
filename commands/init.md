@@ -25,3 +25,9 @@ Mention them in the final report only when missing:
 ℹ︎ This project has no GlitchTip SDK installed (no @sentry/* in deps). Run /devpanl:install-glitchtip-sdk to start emitting errors.
 ℹ︎ This project's GlitchTip is not yet wired to the captures inbox. Run /devpanl:wire-glitchtip to forward events.
 ```
+
+Plane conventions wiring is **not** part of init either — opt-in to keep init silent. Mention it in the final report when `.claude/skills/plane-conventions/SKILL.md` does not exist:
+
+```
+ℹ︎ This project has no Plane conventions skill installed. Run /devpanl:install-plane-conventions to enforce uniform Plane usage across the team (humans + agents).
+```

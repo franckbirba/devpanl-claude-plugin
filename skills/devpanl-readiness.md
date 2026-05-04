@@ -160,6 +160,36 @@ Doctor reports per-check status:
 - ⚠ yellow: works but suboptimal (e.g. forbidden_paths missing some heuristic)
 - ✗ red: blocking (e.g. test command missing) — refuse to dispatch
 
+## Optional check: Plane conventions are wired
+
+This check is **optional** — only relevant when the host project uses
+Plane (i.e. has `plane.project_id` set in `.devpanlrc.json`). The
+`/devpanl:install-plane-conventions` command installs a skill, a
+PreToolUse reminder hook, and a CLAUDE.md anchor so every contributor
+(human or agent) writes Plane the same way: title format, taxonomy,
+lifecycle, description templates.
+
+Doctor reports it as `yes` / `no` / `N/A`:
+
+- `yes` — all of the following:
+  - `.claude/skills/plane-conventions/SKILL.md` exists.
+  - `.claude/hooks/plane-conventions-reminder.sh` exists and is
+    executable (`-x`).
+  - `.claude/settings.json` parses as JSON AND contains a `PreToolUse`
+    hook entry whose `matcher` references at least one
+    `mcp__plane__create_*` or `mcp__plane__update_*` tool.
+- `no` — partial wiring (one or two of the three are present, or the
+  matcher does not reference Plane MCP tools). Fix path:
+  `/devpanl:install-plane-conventions` (idempotent, replaces in place).
+- `N/A` — `.devpanlrc.json#plane.project_id` is empty or `__SET_ME__`,
+  i.e. this project has no Plane workspace configured.
+
+Doctor does not validate the **content** of the skill (modules table,
+IDs cheatsheet) — those are the project's own responsibility to keep
+fresh. The recommended cadence is to re-run
+`/devpanl:install-plane-conventions PLANE_TOKEN=...` when modules drift,
+which refreshes the auto-managed sections in place.
+
 ## Optional check: GlitchTip SDK is installed
 
 This check is **optional** — only relevant when the host project wants
